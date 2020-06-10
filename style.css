@@ -1,74 +1,145 @@
-@import url('https://fonts.googleapis.com/css?family=Fira+Mono:400');
+// based on https://codepen.io/ellgine/pen/EjeXOZ
 
-body{
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  background: #131313;
-  color: #fff;
-  font-size: 96px;
-  font-family: 'Fira Mono', monospace;
-  letter-spacing: -7px;
+$colors: (
+    background: #1d1f20,
+    text: #eee
+);
+
+$font: (
+    family: sans-serif,
+    size: 24px,
+    letter-spacing: 0
+);
+
+$config: (
+    animated: false,
+    nb-letters: 16,
+    animation-length: 4s,
+    mask-letters: ("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
+);
+
+// ----------------------------------
+
+@function color($value) {
+    @return map-get($colors, $value);
 }
 
-div{
-  animation: glitch 1s linear infinite;
+@function font($value) {
+    @return map-get($font, $value);
 }
 
-@keyframes glitch{
-  2%,64%{
-    transform: translate(2px,0) skew(0deg);
-  }
-  4%,60%{
-    transform: translate(-2px,0) skew(0deg);
-  }
-  62%{
-    transform: translate(0,0) skew(5deg);
-  }
+@function config($value) {
+    @return map-get($config, $value);
 }
 
-div:before,
-div:after{
-  content: attr(title);
-  position: absolute;
-  left: 0;
+@function random-string($list) {
+    $result: null;
+    @for $i from 1 through length($list) {
+        $random: random(length($list));
+        $current: nth($list, $random);
+        $list: remove-nth($list, $random);
+        $result: $result#{$current};
+    }
+    @return $result;
 }
 
-div:before{
-  animation: glitchTop 1s linear infinite;
-  clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
-  -webkit-clip-path: polygon(0 0, 100% 0, 100% 33%, 0 33%);
+@function remove-nth($list, $index) {
+    $result: ();
+    @for $i from 1 through length($list) {
+        @if $i != $index {
+            $result: append($result, nth($list, $i));
+        }
+    }
+    @return $result;
 }
 
-@keyframes glitchTop{
-  2%,64%{
-    transform: translate(2px,-2px);
-  }
-  4%,60%{
-    transform: translate(-2px,2px);
-  }
-  62%{
-    transform: translate(13px,-1px) skew(-13deg);
-  }
+@mixin respond-to($breakpoint) {
+    @if type-of($breakpoint) == list {
+        @media (min-width: nth($breakpoint, 1)) and (max-width: nth($breakpoint, 2)) {
+            @content;
+        }
+    }
+    @else {
+        @media (max-width: $breakpoint) {
+            @content;
+        }
+    }
 }
 
-div:after{
-  animation: glitchBotom 1.5s linear infinite;
-  clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
-  -webkit-clip-path: polygon(0 67%, 100% 67%, 100% 100%, 0 100%);
+// ----------------------------------
+
+body {
+    text-align: center;
+    background-color: color(background);
 }
 
-@keyframes glitchBotom{
-  2%,64%{
-    transform: translate(-2px,0);
-  }
-  4%,60%{
-    transform: translate(-2px,0);
-  }
-  62%{
-    transform: translate(-22px,5px) skew(21deg);
-  }
+.wrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 90%;
+    font-size: 0;
+    transform: translate(-50%);
+}
+
+p {
+    font-family: font(family);
+    font-size: 14px;
+    font-weight: 500;
+    color: color(text);
+    opacity: 0.3;
+}
+
+.letter {
+    width: font(size);
+    display: inline-block;
+    vertical-align: middle;
+    position: relative;
+    overflow: hidden;
+    margin: 0 ceil(font(letter-spacing) / 2);
+    font-family: font(family);
+    font-size: font(size);
+    font-weight: 600;
+    line-height: font(size);
+    text-transform: uppercase;
+    color: color(text);
+    @include respond-to(625px) {
+        //font-size: 16px;
+        //width: 18px;
+    }
+    &:before {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        word-break: break-all;
+        background-color: color(background);
+    }
+}
+
+// ----------------------------------
+
+@for $i from 1 through config(nb-letters) {
+    $length: length(config(mask-letters));
+    $random: random($length);
+    $steps: $random - 1;
+    $offset: font(size) * $steps * -1;
+    $delay: random(100) / 100;
+      $duration: $steps * (config(animation-length) / $random);
+    .letter:nth-child(#{$i}):before {
+        content: quote(random-string(config(mask-letters)));
+        margin-top: $offset;
+        animation-name: letter#{$i};
+        animation-duration: $duration - ($duration * $delay);
+        animation-delay: $delay * 1s;
+        animation-fill-mode: forwards;
+    }
+    @keyframes letter#{$i} {
+        from {
+            margin-top: $offset;
+        }
+        to {
+            margin-top: font(size);
+        }
+    }
 }
